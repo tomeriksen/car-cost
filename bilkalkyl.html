@@ -18,11 +18,6 @@
     --text: #1A1816;
     --text-muted: #7A746C;
     --accent: #1A1816;
-    --leasing: #888780;
-    --el-beg: #2B6CB0;
-    --el-ny: #276749;
-    --bensin-gam: #B7791F;
-    --bensin-ny: #C05621;
     --selected-glow: rgba(26,24,22,0.08);
   }
 
@@ -155,22 +150,9 @@
   /* Cards */
   .cards {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
     gap: 10px;
     margin-bottom: 2.5rem;
-  }
-
-  @media (max-width: 1100px) {
-    .cards { grid-template-columns: repeat(3, 1fr); }
-    .layout { grid-template-columns: 240px 1fr; }
-  }
-
-  @media (max-width: 800px) {
-    .cards { grid-template-columns: repeat(2, 1fr); }
-    .layout { grid-template-columns: 1fr; }
-    .sidebar { position: static; height: auto; }
-    header { padding: 1.5rem; }
-    .main { padding: 1.5rem; }
   }
 
   .card {
@@ -234,6 +216,26 @@
     letter-spacing: 0.04em;
   }
 
+  .card-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 1px 5px;
+    border-radius: 3px;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .card-remove:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
   .card-rows {
     border-top: 1px solid var(--border);
     padding-top: 0.6rem;
@@ -251,6 +253,41 @@
   .card-row span:last-child {
     font-family: 'DM Mono', monospace;
     color: var(--text);
+  }
+
+  /* Add car card */
+  .card-add {
+    background: transparent;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 130px;
+    transition: border-color 0.15s, background 0.15s;
+    color: var(--text-muted);
+  }
+
+  .card-add:hover {
+    border-color: var(--accent);
+    background: rgba(0,0,0,0.02);
+    color: var(--text);
+  }
+
+  .card-add-icon {
+    font-size: 1.4rem;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  .card-add-label {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    text-align: center;
   }
 
   /* Charts section */
@@ -288,6 +325,182 @@
     border-top: 1px solid var(--border);
     padding-top: 1rem;
     font-family: 'DM Mono', monospace;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,22,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 1.75rem;
+    width: 440px;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0 4px;
+    border-radius: 3px;
+    transition: color 0.12s;
+  }
+
+  .modal-close-btn:hover { color: var(--text); }
+
+  .modal-tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-tab {
+    flex: 1;
+    padding: 0.45rem 0.5rem;
+    background: none;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .modal-tab.active {
+    background: var(--text);
+    color: #fff;
+  }
+
+  .modal-field-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-box textarea,
+  .modal-box input[type=text] {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+
+  .modal-box textarea:focus,
+  .modal-box input[type=text]:focus {
+    border-color: var(--border-strong);
+  }
+
+  .modal-box textarea { min-height: 90px; }
+
+  .modal-hint {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 0.4rem;
+  }
+
+  .modal-error {
+    font-size: 0.72rem;
+    color: #C05621;
+    font-family: 'DM Mono', monospace;
+    margin-top: 0.75rem;
+    min-height: 1.1em;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn:hover { border-color: var(--border-strong); color: var(--text); }
+
+  .btn-primary {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.82; }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 240px 1fr; }
+  }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    header { padding: 1.5rem; }
+    .main { padding: 1.5rem; }
   }
 </style>
 </head>
@@ -375,150 +588,298 @@
   </main>
 </div>
 
+<!-- Add car modal -->
+<div id="add-modal" class="modal-overlay" style="display:none" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Lägg till bil</span>
+      <button class="modal-close-btn" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="blocket" onclick="setTab('blocket')">Blocket-annons</button>
+      <button class="modal-tab" data-tab="regnummer" onclick="setTab('regnummer')">Registreringsnummer</button>
+    </div>
+
+    <div id="panel-blocket">
+      <div class="modal-field-label">URL eller klistrad annonstext</div>
+      <textarea id="blocket-input" placeholder="https://www.blocket.se/annons/…&#10;&#10;eller klistra in annonstexten direkt"></textarea>
+      <div class="modal-hint">Klistra in Blocket-länken eller hela annonstexten.</div>
+    </div>
+
+    <div id="panel-regnummer" style="display:none">
+      <div class="modal-field-label">Registreringsnummer</div>
+      <input type="text" id="regnr-input" placeholder="ABC123" maxlength="10"
+             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <div class="modal-hint">Fordonsinformation hämtas från biluppgifter.se.</div>
+    </div>
+
+    <div id="miltal-group" style="display:none;margin-top:1rem;">
+      <div class="modal-field-label">Miltal (valfritt)</div>
+      <input type="number" id="miltal-input" placeholder="t.ex. 8 500" min="0" max="200000"
+             style="width:100%;border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.75rem;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text);background:var(--bg);outline:none;">
+      <div class="modal-hint">Anges i svenska mil. Förbättrar prisuppskattningen.</div>
+    </div>
+
+    <div id="modal-error" class="modal-error"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Avbryt</button>
+      <button class="btn btn-primary" id="analyze-btn" onclick="startAnalysis()">Analysera</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const COLORS = {
-  leasing:'#888780', begagnadEl:'#2B6CB0', nyareEl:'#276749', bensinGammal:'#B7791F', bensinNyare:'#C05621'
-};
-const KEYS   = ['leasing','begagnadEl','nyareEl','bensinGammal','bensinNyare'];
-const NAMES  = ['Leasing','Begagnad elbil','Nyare begagnad elbil','Billig bensinbil','Nyare bensinbil'];
-const MODELS = [
-  'Volvo XC40, inkl. försäkring + el',
-  'Kia EV6 / Polestar 2 (~2022)',
-  'Tesla Model 3 LR / EV6 (~2023)',
-  'Skoda Octavia / V60 (~2013–15)',
-  'Skoda Octavia / V60 (~2018–20)'
-];
-const INKOP       = [0,270000,370000,85000,175000];
-const KWH_MIL     = {leasing:2.4,begagnadEl:2.2,nyareEl:2.1,bensinGammal:0,bensinNyare:0};
-const LITER_MIL   = {leasing:0,begagnadEl:0,nyareEl:0,bensinGammal:0.92,bensinNyare:0.82};
-const DEPR_RATE   = {leasing:0,begagnadEl:0.12,nyareEl:0.10,bensinGammal:0.06,bensinNyare:0.08};
-const SVC_MONTH   = {leasing:0,begagnadEl:300,nyareEl:300,bensinGammal:700,bensinNyare:550};
-const ROAD_BES    = {leasing:0,begagnadEl:445,nyareEl:445,bensinGammal:350,bensinNyare:350};
-const MONTHLY_FEE = {leasing:5890,begagnadEl:0,nyareEl:0,bensinGammal:0,bensinNyare:0};
 const BENSIN_PRIS = 18.5;
 
-function getInsurance(k) {
-  if(k==='leasing')return 0;if(k==='begagnadEl')return 1050;
-  if(k==='nyareEl')return 1200;if(k==='bensinGammal')return 250;
-  if(k==='bensinNyare')return 750;return 0;
-}
+// Extra colors for user-added cars
+const USER_COLORS = ['#7C3AED','#0EA5E9','#DB2777','#059669','#F59E0B','#64748B'];
 
-function calcOne(k,mil,yrs,elpris,kap){
-  const i=KEYS.indexOf(k),inköp=INKOP[i];
-  const depr=(inköp*DEPR_RATE[k])/12;
-  const kapital=(inköp*(kap/100))/12;
-  const fuel=(mil/12)*(KWH_MIL[k]*elpris+LITER_MIL[k]*BENSIN_PRIS);
-  const ins=getInsurance(k);
-  const svc=SVC_MONTH[k]+ROAD_BES[k]/12;
-  const mon=MONTHLY_FEE[k];
-  const total=mon+depr+kapital+ins+fuel+svc;
-  return{
-    total:Math.round(total),leasing:Math.round(mon),depr:Math.round(depr),
-    kapital:Math.round(kapital),insurance:Math.round(ins),fuel:Math.round(fuel),
-    service:Math.round(svc),inköp,totalYears:Math.round(total*12*yrs)
+const BASE_CARS = [
+  { key:'leasing',      name:'Leasing',              model:'Volvo XC40, inkl. försäkring + el',   color:'#888780', inkop:0,      kwhMil:2.4, literMil:0,    deprRate:0,    svcMonth:0,   roadBes:0,   monthlyFee:5890, insuranceMonth:0    },
+  { key:'begagnadEl',   name:'Begagnad elbil',        model:'Kia EV6 / Polestar 2 (~2022)',        color:'#2B6CB0', inkop:270000, kwhMil:2.2, literMil:0,    deprRate:0.12, svcMonth:300, roadBes:445, monthlyFee:0,    insuranceMonth:1050 },
+  { key:'nyareEl',      name:'Nyare begagnad elbil',  model:'Tesla Model 3 LR / EV6 (~2023)',      color:'#276749', inkop:370000, kwhMil:2.1, literMil:0,    deprRate:0.10, svcMonth:300, roadBes:445, monthlyFee:0,    insuranceMonth:1200 },
+  { key:'bensinGammal', name:'Billig bensinbil',      model:'Skoda Octavia / V60 (~2013–15)',      color:'#B7791F', inkop:85000,  kwhMil:0,   literMil:0.92, deprRate:0.06, svcMonth:700, roadBes:350, monthlyFee:0,    insuranceMonth:250  },
+  { key:'bensinNyare',  name:'Nyare bensinbil',       model:'Skoda Octavia / V60 (~2018–20)',      color:'#C05621', inkop:175000, kwhMil:0,   literMil:0.82, deprRate:0.08, svcMonth:550, roadBes:350, monthlyFee:0,    insuranceMonth:750  },
+];
+
+let userCars = [];
+let selectedKey = 'leasing';
+let breakChart = null, totChart = null;
+
+function allCars() { return [...BASE_CARS, ...userCars]; }
+
+function calcOne(car, mil, yrs, elpris, kap) {
+  const depr    = (car.inkop * car.deprRate) / 12;
+  const kapital = (car.inkop * (kap / 100)) / 12;
+  const fuel    = (mil / 12) * (car.kwhMil * elpris + car.literMil * BENSIN_PRIS);
+  const ins     = car.insuranceMonth;
+  const svc     = car.svcMonth + car.roadBes / 12;
+  const mon     = car.monthlyFee;
+  const total   = mon + depr + kapital + ins + fuel + svc;
+  return {
+    total:      Math.round(total),
+    leasing:    Math.round(mon),
+    depr:       Math.round(depr),
+    kapital:    Math.round(kapital),
+    insurance:  Math.round(ins),
+    fuel:       Math.round(fuel),
+    service:    Math.round(svc),
+    inkop:      car.inkop,
+    totalYears: Math.round(total * 12 * yrs),
   };
 }
 
-let selectedKey='leasing';
-let breakChart=null,totChart=null;
-function fmt(n){return n.toLocaleString('sv-SE');}
+function fmt(n) { return n.toLocaleString('sv-SE'); }
 
-function render(){
-  const mil=parseInt(document.getElementById('km').value);
-  const yrs=parseInt(document.getElementById('years').value);
-  const elpris=parseFloat(document.getElementById('elpris').value);
-  const kap=parseFloat(document.getElementById('kapital').value);
+function removeUserCar(key) {
+  userCars = userCars.filter(c => c.key !== key);
+  if (selectedKey === key) selectedKey = BASE_CARS[0].key;
+  render();
+}
 
-  document.getElementById('km-out').textContent=mil.toLocaleString('sv-SE')+' mil';
-  document.getElementById('years-out').textContent=yrs+' år';
-  document.getElementById('elpris-out').textContent=elpris.toFixed(1).replace('.',',')+' kr/kWh';
-  document.getElementById('kapital-out').textContent=kap.toFixed(1).replace('.',',')+' %/år';
+function render() {
+  const mil    = parseInt(document.getElementById('km').value);
+  const yrs    = parseInt(document.getElementById('years').value);
+  const elpris = parseFloat(document.getElementById('elpris').value);
+  const kap    = parseFloat(document.getElementById('kapital').value);
 
-  const allData={};
-  KEYS.forEach(k=>{allData[k]=calcOne(k,mil,yrs,elpris,kap);});
-  const minTotal=Math.min(...KEYS.map(k=>allData[k].total));
+  document.getElementById('km-out').textContent      = mil.toLocaleString('sv-SE') + ' mil';
+  document.getElementById('years-out').textContent   = yrs + ' år';
+  document.getElementById('elpris-out').textContent  = elpris.toFixed(1).replace('.', ',') + ' kr/kWh';
+  document.getElementById('kapital-out').textContent = kap.toFixed(1).replace('.', ',') + ' %/år';
 
-  const container=document.getElementById('cards-container');
-  container.innerHTML='';
-  KEYS.forEach((k,i)=>{
-    const d=allData[k];
-    const isBest=d.total===minTotal;
-    const isSel=k===selectedKey;
-    const div=document.createElement('div');
-    div.className='card'+(isSel?' selected':'');
-    div.innerHTML=`
-      ${isBest?'<span class="best-badge">lägst</span>':''}
-      <div class="card-dot" style="background:${COLORS[k]}"></div>
-      <div class="card-name">${NAMES[i]}</div>
-      <div class="card-model">${MODELS[i]}</div>
+  const cars    = allCars();
+  const allData = {};
+  cars.forEach(car => { allData[car.key] = calcOne(car, mil, yrs, elpris, kap); });
+  const minTotal = Math.min(...cars.map(c => allData[c.key].total));
+
+  const container = document.getElementById('cards-container');
+  container.innerHTML = '';
+
+  cars.forEach(car => {
+    const d      = allData[car.key];
+    const isBest = d.total === minTotal;
+    const isSel  = car.key === selectedKey;
+    const div    = document.createElement('div');
+    div.className = 'card' + (isSel ? ' selected' : '');
+    div.innerHTML = `
+      ${isBest ? '<span class="best-badge">lägst</span>' : ''}
+      ${car.isUserAdded ? `<button class="card-remove" onclick="event.stopPropagation();removeUserCar('${car.key}')">×</button>` : ''}
+      <div class="card-dot" style="background:${car.color}"></div>
+      <div class="card-name">${car.name}</div>
+      <div class="card-model">${car.model}</div>
       <div class="card-total">${fmt(d.total)}</div>
       <div class="card-unit">kr / månad</div>
       <div class="card-rows">
-        ${d.inköp>0?`<div class="card-row"><span>Inköpspris</span><span>${fmt(d.inköp)} kr</span></div>`:''}
-        ${d.leasing>0?`<div class="card-row"><span>Leasingavgift</span><span>${fmt(d.leasing)} kr</span></div>`:''}
-        ${d.depr>0?`<div class="card-row"><span>Värdeminskning</span><span>${fmt(d.depr)} kr</span></div>`:''}
-        ${d.kapital>0?`<div class="card-row"><span>Kapitalkostnad</span><span>${fmt(d.kapital)} kr</span></div>`:''}
-        ${d.insurance>0?`<div class="card-row"><span>Försäkring</span><span>${fmt(d.insurance)} kr</span></div>`:''}
+        ${d.inkop > 0      ? `<div class="card-row"><span>Inköpspris</span><span>${fmt(d.inkop)} kr</span></div>` : ''}
+        ${d.leasing > 0    ? `<div class="card-row"><span>Leasingavgift</span><span>${fmt(d.leasing)} kr</span></div>` : ''}
+        ${d.depr > 0       ? `<div class="card-row"><span>Värdeminskning</span><span>${fmt(d.depr)} kr</span></div>` : ''}
+        ${d.kapital > 0    ? `<div class="card-row"><span>Kapitalkostnad</span><span>${fmt(d.kapital)} kr</span></div>` : ''}
+        ${d.insurance > 0  ? `<div class="card-row"><span>Försäkring</span><span>${fmt(d.insurance)} kr</span></div>` : ''}
         <div class="card-row"><span>Drivmedel</span><span>${fmt(d.fuel)} kr</span></div>
         <div class="card-row"><span>Service + skatt</span><span>${fmt(d.service)} kr</span></div>
       </div>
     `;
-    div.addEventListener('click',()=>{selectedKey=k;render();});
+    div.addEventListener('click', () => { selectedKey = car.key; render(); });
     container.appendChild(div);
   });
 
-  const d=allData[selectedKey];
-  const color=COLORS[selectedKey];
-  const idx=KEYS.indexOf(selectedKey);
-  document.getElementById('breakdown-title').textContent='Månadskostnad — '+NAMES[idx];
-  document.getElementById('total-title').textContent='Total kostnad över '+yrs+' år';
+  // "Add car" card
+  const addCard = document.createElement('div');
+  addCard.className = 'card-add';
+  addCard.innerHTML = '<div class="card-add-icon">+</div><div class="card-add-label">Lägg till bil</div>';
+  addCard.addEventListener('click', openModal);
+  container.appendChild(addCard);
 
-  const breakLabels=[],breakData=[];
-  if(d.leasing>0){breakLabels.push('Leasingavgift');breakData.push(d.leasing);}
-  if(d.depr>0){breakLabels.push('Värdeminskning');breakData.push(d.depr);}
-  if(d.kapital>0){breakLabels.push('Kapitalkostnad');breakData.push(d.kapital);}
-  if(d.insurance>0){breakLabels.push('Försäkring');breakData.push(d.insurance);}
-  breakLabels.push('Drivmedel');breakData.push(d.fuel);
-  breakLabels.push('Service + skatt');breakData.push(d.service);
+  // Breakdown chart for selected car
+  const selCar  = cars.find(c => c.key === selectedKey) || cars[0];
+  const d       = allData[selCar.key];
+  const color   = selCar.color;
 
-  if(breakChart)breakChart.destroy();
-  breakChart=new Chart(document.getElementById('breakdownChart').getContext('2d'),{
-    type:'bar',
-    data:{labels:breakLabels,datasets:[{data:breakData,backgroundColor:color,borderRadius:3,borderSkipped:false}]},
-    options:{
-      indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'},callback:v=>fmt(v)+' kr'},grid:{color:'rgba(0,0,0,0.06)'},border:{display:false}},
-        y:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'}},grid:{display:false},border:{display:false}}
-      }
-    }
+  document.getElementById('breakdown-title').textContent = 'Månadskostnad — ' + selCar.name;
+  document.getElementById('total-title').textContent     = 'Total kostnad över ' + yrs + ' år';
+
+  const breakLabels = [], breakData = [];
+  if (d.leasing > 0)   { breakLabels.push('Leasingavgift');  breakData.push(d.leasing);   }
+  if (d.depr > 0)      { breakLabels.push('Värdeminskning'); breakData.push(d.depr);      }
+  if (d.kapital > 0)   { breakLabels.push('Kapitalkostnad'); breakData.push(d.kapital);   }
+  if (d.insurance > 0) { breakLabels.push('Försäkring');     breakData.push(d.insurance); }
+  breakLabels.push('Drivmedel');       breakData.push(d.fuel);
+  breakLabels.push('Service + skatt'); breakData.push(d.service);
+
+  if (breakChart) breakChart.destroy();
+  breakChart = new Chart(document.getElementById('breakdownChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: breakLabels, datasets: [{ data: breakData, backgroundColor: color, borderRadius: 3, borderSkipped: false }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#7A746C', font: { size: 11, family: 'DM Mono' }, callback: v => fmt(v) + ' kr' }, grid: { color: 'rgba(0,0,0,0.06)' }, border: { display: false } },
+        y: { ticks: { color: '#7A746C', font: { size: 11, family: 'DM Mono' } }, grid: { display: false }, border: { display: false } },
+      },
+    },
   });
 
-  const totalColors=KEYS.map(k=>k===selectedKey?COLORS[k]:COLORS[k]+'55');
-  if(totChart)totChart.destroy();
-  totChart=new Chart(document.getElementById('totalChart').getContext('2d'),{
-    type:'bar',
-    data:{labels:NAMES,datasets:[{data:KEYS.map(k=>allData[k].totalYears),backgroundColor:totalColors,borderRadius:3,borderSkipped:false}]},
-    options:{
-      indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'},callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'rgba(0,0,0,0.06)'},border:{display:false}},
-        y:{ticks:{color:'#7A746C',font:{size:10,family:'DM Mono'}},grid:{display:false},border:{display:false}}
-      }
-    }
+  // Total comparison chart — all cars
+  const totalColors = cars.map(c => c.key === selectedKey ? c.color : c.color + '55');
+  if (totChart) totChart.destroy();
+  totChart = new Chart(document.getElementById('totalChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: cars.map(c => c.name), datasets: [{ data: cars.map(c => allData[c.key].totalYears), backgroundColor: totalColors, borderRadius: 3, borderSkipped: false }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#7A746C', font: { size: 11, family: 'DM Mono' }, callback: v => (v / 1000).toFixed(0) + 'k' }, grid: { color: 'rgba(0,0,0,0.06)' }, border: { display: false } },
+        y: { ticks: { color: '#7A746C', font: { size: 10, family: 'DM Mono' } }, grid: { display: false }, border: { display: false } },
+      },
+    },
   });
 
-  document.getElementById('foot-note').textContent=
-    'Kapitalkostnad och värdeminskning är separata poster — depr. är vad bilen tappar i marknadsvärde, kapital är alternativkostnaden för bundet kapital. '+
-    'Äldre bensinbil (>8 000 mil): trafikförsäkring 250 kr/mån. Nyare bensinbil (<8 000 mil): helförsäkring 750 kr/mån. '+
+  document.getElementById('foot-note').textContent =
+    'Kapitalkostnad och värdeminskning är separata poster — depr. är vad bilen tappar i marknadsvärde, kapital är alternativkostnaden för bundet kapital. ' +
+    'Äldre bensinbil (>8 000 mil): trafikförsäkring 250 kr/mån. Nyare bensinbil (<8 000 mil): helförsäkring 750 kr/mån. ' +
     'Bensinpris 18,50 kr/l. Klicka på ett kort för att se kostnaderna uppdelade för det alternativet.';
 }
 
-['km','years','elpris','kapital'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',render);
+// --- Modal ---
+
+function openModal() {
+  document.getElementById('add-modal').style.display = 'flex';
+  document.getElementById('modal-error').textContent = '';
+  document.getElementById('blocket-input').value = '';
+  document.getElementById('regnr-input').value = '';
+  document.getElementById('miltal-input').value = '';
+  setTab('blocket');
+}
+
+function closeModal() {
+  document.getElementById('add-modal').style.display = 'none';
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = false;
+  btn.textContent = 'Analysera';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('add-modal')) closeModal();
+}
+
+function setTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.getElementById('panel-blocket').style.display   = tab === 'blocket'   ? '' : 'none';
+  document.getElementById('panel-regnummer').style.display  = tab === 'regnummer' ? '' : 'none';
+  document.getElementById('miltal-group').style.display     = tab === 'regnummer' ? '' : 'none';
+}
+
+async function startAnalysis() {
+  const btn   = document.getElementById('analyze-btn');
+  const errEl = document.getElementById('modal-error');
+  const tab   = document.querySelector('.modal-tab.active').dataset.tab;
+
+  const content = tab === 'regnummer'
+    ? document.getElementById('regnr-input').value.trim()
+    : document.getElementById('blocket-input').value.trim();
+
+  if (!content) {
+    errEl.textContent = 'Ange en URL, annonstext eller registreringsnummer.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analyserar…';
+  errEl.textContent = '';
+
+  try {
+    const resp = await fetch('/api/analyze-car', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: tab,
+        content,
+        miltal: document.getElementById('miltal-input').value.trim() || null,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Okänt serverfel');
+    addUserCar(data);
+    closeModal();
+  } catch (e) {
+    errEl.textContent = 'Fel: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Analysera';
+  }
+}
+
+function addUserCar(data) {
+  const colorIdx = userCars.length % USER_COLORS.length;
+  userCars.push({
+    key:            'custom_' + Date.now(),
+    name:           data.name           || 'Okänd bil',
+    model:          data.model          || '',
+    color:          USER_COLORS[colorIdx],
+    inkop:          Number(data.inkop)          || 0,
+    kwhMil:         Number(data.kwh_mil)        || 0,
+    literMil:       Number(data.liter_mil)      || 0,
+    deprRate:       Number(data.depr_rate)      || 0.08,
+    svcMonth:       Number(data.svc_month)      || 400,
+    roadBes:        Number(data.road_bes)        || 360,
+    monthlyFee:     0,
+    insuranceMonth: Number(data.insurance_month) || 700,
+    isUserAdded:    true,
+  });
+  selectedKey = userCars[userCars.length - 1].key;
+  render();
+}
+
+['km', 'years', 'elpris', 'kapital'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
 });
+
 render();
 </script>
 </body>
