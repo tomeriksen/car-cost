@@ -14,8 +14,24 @@ Starta:
 """
 
 import os
-import re
 import sys
+import hashlib
+import json
+
+_CACHE_FILE = os.path.join(os.path.dirname(__file__), "cache.json")
+
+def _load_cache() -> dict:
+    try:
+        with open(_CACHE_FILE) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def _save_cache(cache: dict) -> None:
+    with open(_CACHE_FILE, "w") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+_cache: dict = _load_cache()
 
 # Flush stdout immediately so logs appear in Render/cloud dashboards
 os.environ.setdefault("PYTHONUNBUFFERED", "1")
@@ -56,41 +72,32 @@ def index():
 @app.route("/api/analyze-car", methods=["POST"])
 def analyze_car():
     data = request.get_json(silent=True) or {}
-    mode = data.get("mode", "blocket")
     content = (data.get("content") or "").strip()
-    miltal = data.get("miltal")
+    mode    = data.get("mode", "blocket")
 
     if not content:
         return jsonify({"error": "Inget innehåll angivet."}), 400
 
     from datetime import date
     current_year = date.today().year
-    miltal_str = f"\n\nMiltal (angivet av användaren): {miltal} mil" if miltal else ""
 
     try:
-        if mode == "regnummer":
-            regnr = re.sub(r"[\s\-]", "", content).upper()
-            vehicle_text = fetch_vehicle_info(regnr)
-            scraped_ok = "Ingen fordonsinformation" not in vehicle_text
-            print(f">>> regnr={regnr}, scraped_ok={scraped_ok}, info_length={len(vehicle_text)}", flush=True)
-            if scraped_ok:
-                prompt = f"Aktuellt år: {current_year}\n\nRegistreringsnummer: {regnr}\n\nFordonsinformation:\n{vehicle_text}{miltal_str}"
-            else:
-                prompt = (
-                    f"Aktuellt år: {current_year}\n\n"
-                    f"Registreringsnummer: {regnr}{miltal_str}\n\n"
-                    f"Ingen extern fordonsdata tillgänglig. Uppskatta kostnader baserat på "
-                    f"angiven information och din kunskap om svenska begagnatmarknaden."
-                )
+        if mode == "blocket" and content.startswith(("http://", "https://")):
+            listing_text = fetch_blocket(content)
+            prompt = f"Aktuellt år: {current_year}\n\nBlocket-annons:\n{listing_text}"
         else:
-            if content.startswith(("http://", "https://")):
-                listing_text = fetch_blocket(content)
-            else:
-                listing_text = content
-            prompt = f"Aktuellt år: {current_year}\n\nBlocket-annons:\n{listing_text}{miltal_str}"
+            # manuell eller klistrad annonstext
+            prompt = f"Aktuellt år: {current_year}\n\n{content}"
+
+        cache_key = hashlib.md5(prompt.encode()).hexdigest()
+        if cache_key in _cache:
+            print(f">>> cache hit {cache_key[:8]}", flush=True)
+            return jsonify(_cache[cache_key])
 
         provider = get_provider()
         result = provider.analyze_car(prompt)
+        _cache[cache_key] = result
+        _save_cache(_cache)
         return jsonify(result)
 
     except Exception as exc:
@@ -128,36 +135,6 @@ def fetch_blocket(url: str) -> str:
         return f"Kunde inte hämta Blocket-annons ({exc}). Klistra in annonstexten manuellt."
 
 
-
-
-def fetch_vehicle_info(regnr: str) -> str:
-    """Fetch Swedish vehicle data from car.info (JSON API, no auth required)."""
-    import json as _json
-    url = f"https://www.car.info/sv-se/license-plate/S/{regnr}?json=1"
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=12)
-        print(f">>> car.info → HTTP {r.status_code}", flush=True)
-        if r.status_code != 200:
-            raise ValueError(f"HTTP {r.status_code}")
-        data = r.json()
-
-        # Extract the most relevant fields
-        path = data.get("path", {})
-        parts = []
-        for key in ("brands", "series", "model_gens", "model_years", "model_gen_engines"):
-            node = path.get(key, {})
-            if node.get("name"):
-                parts.append(node["name"])
-            if node.get("year"):
-                parts.append(str(node["year"]))
-
-        summary = ", ".join(dict.fromkeys(parts))  # deduplicate, preserve order
-        print(f">>> car.info result: {summary}", flush=True)
-        return f"Fordon: {summary}\nFullständig data: {_json.dumps(path, ensure_ascii=False)[:2000]}"
-
-    except Exception as exc:
-        print(f">>> car.info failed: {exc}", flush=True)
-        return f"Ingen fordonsinformation tillgänglig för {regnr}."
 
 
 if __name__ == "__main__":

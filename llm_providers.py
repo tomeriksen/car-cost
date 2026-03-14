@@ -58,7 +58,10 @@ Riktlinjer:
     Volvo V60 bensin: 400 000 kr
     Skoda Octavia bensin: 300 000 kr
 - kwh_mil: kWh per mil (1 mil = 10 km). Sätt 0 för bensin-/dieselbilar.
+  VIKTIGT: För elbilar MÅSTE detta vara > 0.
+  Typvärden: Volvo XC40 Recharge 2.3, Tesla Model 3 2.1, Kia EV6 2.2, VW ID.4 2.4, Skoda Enyaq 2.3, Polestar 2 2.2.
 - liter_mil: liter per mil. Sätt 0 för elbilar.
+  VIKTIGT: För bensin-/dieselbilar MÅSTE detta vara > 0. Typvärden: bensin 0.7–1.0, diesel 0.6–0.8.
 - depr_rate: ÅRLIG värdeminsknings­takt som decimal.
   Typvärden: elbil <4 år: 0.10–0.12, elbil äldre: 0.08–0.10,
   bensin/diesel nyare: 0.07–0.09, bensin/diesel äldre: 0.05–0.07

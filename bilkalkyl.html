@@ -598,7 +598,7 @@
 
     <div class="modal-tabs">
       <button class="modal-tab active" data-tab="blocket" onclick="setTab('blocket')">Blocket-annons</button>
-      <button class="modal-tab" data-tab="regnummer" onclick="setTab('regnummer')">Registreringsnummer</button>
+      <button class="modal-tab" data-tab="manuell" onclick="setTab('manuell')">Ange bil manuellt</button>
     </div>
 
     <div id="panel-blocket">
@@ -607,18 +607,20 @@
       <div class="modal-hint">Klistra in Blocket-länken eller hela annonstexten.</div>
     </div>
 
-    <div id="panel-regnummer" style="display:none">
-      <div class="modal-field-label">Registreringsnummer</div>
-      <input type="text" id="regnr-input" placeholder="ABC123" maxlength="10"
-             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-      <div class="modal-hint">Fordonsinformation hämtas automatiskt.</div>
-    </div>
-
-    <div id="miltal-group" style="display:none;margin-top:1rem;">
-      <div class="modal-field-label">Miltal (valfritt)</div>
-      <input type="number" id="miltal-input" placeholder="t.ex. 8 500" min="0" max="200000"
-             style="width:100%;border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.75rem;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text);background:var(--bg);outline:none;">
-      <div class="modal-hint">Anges i svenska mil. Förbättrar prisuppskattningen.</div>
+    <div id="panel-manuell" style="display:none">
+      <div class="modal-field-label">Bil</div>
+      <input type="text" id="manuell-input" placeholder="t.ex. Volvo XC40 Recharge 2023">
+      <div style="margin-top:0.85rem;">
+        <div class="modal-field-label">Miltal</div>
+        <input type="number" id="miltal-input" placeholder="t.ex. 8 500" min="0" max="200000"
+               style="width:100%;border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.75rem;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text);background:var(--bg);outline:none;">
+      </div>
+      <div style="margin-top:0.85rem;">
+        <div class="modal-field-label">Pris (valfritt)</div>
+        <input type="number" id="pris-input" placeholder="t.ex. 345 000" min="0"
+               style="width:100%;border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.75rem;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--text);background:var(--bg);outline:none;">
+      </div>
+      <div class="modal-hint">AI uppskattar förbrukning, försäkring och värdeminskning.</div>
     </div>
 
     <div id="modal-error" class="modal-error"></div>
@@ -791,8 +793,9 @@ function openModal() {
   document.getElementById('add-modal').style.display = 'flex';
   document.getElementById('modal-error').textContent = '';
   document.getElementById('blocket-input').value = '';
-  document.getElementById('regnr-input').value = '';
+  document.getElementById('manuell-input').value = '';
   document.getElementById('miltal-input').value = '';
+  document.getElementById('pris-input').value = '';
   setTab('blocket');
 }
 
@@ -811,9 +814,8 @@ function setTab(tab) {
   document.querySelectorAll('.modal-tab').forEach(el => {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
-  document.getElementById('panel-blocket').style.display   = tab === 'blocket'   ? '' : 'none';
-  document.getElementById('panel-regnummer').style.display  = tab === 'regnummer' ? '' : 'none';
-  document.getElementById('miltal-group').style.display     = tab === 'regnummer' ? '' : 'none';
+  document.getElementById('panel-blocket').style.display  = tab === 'blocket'  ? '' : 'none';
+  document.getElementById('panel-manuell').style.display  = tab === 'manuell'  ? '' : 'none';
 }
 
 async function startAnalysis() {
@@ -821,12 +823,19 @@ async function startAnalysis() {
   const errEl = document.getElementById('modal-error');
   const tab   = document.querySelector('.modal-tab.active').dataset.tab;
 
-  const content = tab === 'regnummer'
-    ? document.getElementById('regnr-input').value.trim()
-    : document.getElementById('blocket-input').value.trim();
+  let content;
+  if (tab === 'manuell') {
+    const bil = document.getElementById('manuell-input').value.trim();
+    if (!bil) { errEl.textContent = 'Ange bilmodell.'; return; }
+    const mil = document.getElementById('miltal-input').value.trim();
+    const pris = document.getElementById('pris-input').value.trim();
+    content = `Bil: ${bil}` + (mil ? `\nMiltal: ${mil} mil` : '') + (pris ? `\nPris: ${pris} kr` : '');
+  } else {
+    content = document.getElementById('blocket-input').value.trim();
+  }
 
   if (!content) {
-    errEl.textContent = 'Ange en URL, annonstext eller registreringsnummer.';
+    errEl.textContent = 'Ange en URL eller annonstext.';
     return;
   }
 
@@ -838,11 +847,7 @@ async function startAnalysis() {
     const resp = await fetch('/api/analyze-car', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: tab,
-        content,
-        miltal: document.getElementById('miltal-input').value.trim() || null,
-      }),
+      body: JSON.stringify({ mode: tab, content }),
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Okänt serverfel');
