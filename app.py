@@ -15,6 +15,11 @@ Starta:
 
 import os
 import re
+import sys
+
+# Flush stdout immediately so logs appear in Render/cloud dashboards
+os.environ.setdefault("PYTHONUNBUFFERED", "1")
+sys.stdout.reconfigure(line_buffering=True)
 
 try:
     from dotenv import load_dotenv
@@ -66,7 +71,17 @@ def analyze_car():
         if mode == "regnummer":
             regnr = re.sub(r"[\s\-]", "", content).upper()
             vehicle_text = fetch_vehicle_info(regnr)
-            prompt = f"Aktuellt år: {current_year}\n\nRegistreringsnummer: {regnr}\n\nFordonsinformation:\n{vehicle_text}{miltal_str}"
+            scraped_ok = "Ingen fordonsinformation" not in vehicle_text
+            print(f">>> regnr={regnr}, scraped_ok={scraped_ok}, info_length={len(vehicle_text)}", flush=True)
+            if scraped_ok:
+                prompt = f"Aktuellt år: {current_year}\n\nRegistreringsnummer: {regnr}\n\nFordonsinformation:\n{vehicle_text}{miltal_str}"
+            else:
+                prompt = (
+                    f"Aktuellt år: {current_year}\n\n"
+                    f"Registreringsnummer: {regnr}{miltal_str}\n\n"
+                    f"Ingen extern fordonsdata tillgänglig. Uppskatta kostnader baserat på "
+                    f"angiven information och din kunskap om svenska begagnatmarknaden."
+                )
         else:
             if content.startswith(("http://", "https://")):
                 listing_text = fetch_blocket(content)
@@ -116,30 +131,33 @@ def fetch_blocket(url: str) -> str:
 
 
 def fetch_vehicle_info(regnr: str) -> str:
-    """Fetch Swedish vehicle data — tries multiple sources."""
-    sources = [
-        f"https://biluppgifter.se/fordon/{regnr}",
-        f"https://www.regnummer.se/{regnr}",
-        f"https://fordonsfragan.se/?regnr={regnr}",
-    ]
-    for url in sources:
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=12)
-            print(f">>> {url} → HTTP {r.status_code}, {len(r.text)} bytes")
-            if r.status_code != 200:
-                continue
-            soup = BeautifulSoup(r.text, "html.parser")
-            for tag in soup(["script", "style", "nav", "footer", "header"]):
-                tag.decompose()
-            text = soup.get_text(separator="\n", strip=True)
-            # Sanity check — if we got a useful page it should mention the regnr or car brand
-            if len(text) > 300:
-                print(f">>> using {url}, text length {len(text)}")
-                return text[:4000]
-        except Exception as exc:
-            print(f">>> {url} failed: {exc}")
+    """Fetch Swedish vehicle data from car.info (JSON API, no auth required)."""
+    import json as _json
+    url = f"https://www.car.info/sv-se/license-plate/S/{regnr}?json=1"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=12)
+        print(f">>> car.info → HTTP {r.status_code}", flush=True)
+        if r.status_code != 200:
+            raise ValueError(f"HTTP {r.status_code}")
+        data = r.json()
 
-    return f"Registreringsnummer: {regnr}. Ingen fordonsinformation tillgänglig — uppskatta baserat på regnumrets format och din kunskap om svenska bilar."
+        # Extract the most relevant fields
+        path = data.get("path", {})
+        parts = []
+        for key in ("brands", "series", "model_gens", "model_years", "model_gen_engines"):
+            node = path.get(key, {})
+            if node.get("name"):
+                parts.append(node["name"])
+            if node.get("year"):
+                parts.append(str(node["year"]))
+
+        summary = ", ".join(dict.fromkeys(parts))  # deduplicate, preserve order
+        print(f">>> car.info result: {summary}", flush=True)
+        return f"Fordon: {summary}\nFullständig data: {_json.dumps(path, ensure_ascii=False)[:2000]}"
+
+    except Exception as exc:
+        print(f">>> car.info failed: {exc}", flush=True)
+        return f"Ingen fordonsinformation tillgänglig för {regnr}."
 
 
 if __name__ == "__main__":
