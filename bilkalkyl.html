@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilkalkyl — Leasing vs. Köp</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --border: #DDD9D0;
+    --border-strong: #B8B2A7;
+    --text: #1A1816;
+    --text-muted: #7A746C;
+    --accent: #1A1816;
+    --leasing: #888780;
+    --el-beg: #2B6CB0;
+    --el-ny: #276749;
+    --bensin-gam: #B7791F;
+    --bensin-ny: #C05621;
+    --selected-glow: rgba(26,24,22,0.08);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 3rem 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    background: var(--surface);
+  }
+
+  header h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 73px);
+    overflow-y: auto;
+  }
+
+  .sidebar-section { margin-bottom: 2rem; }
+
+  .sidebar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .slider-group { margin-bottom: 1.25rem; }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .slider-name {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .slider-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--border-strong);
+    border-radius: 1px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    border: none;
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Main content */
+  .main {
+    padding: 2rem 2.5rem;
+    overflow-x: hidden;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+
+  @media (max-width: 1100px) {
+    .cards { grid-template-columns: repeat(3, 1fr); }
+    .layout { grid-template-columns: 240px 1fr; }
+  }
+
+  @media (max-width: 800px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    header { padding: 1.5rem; }
+    .main { padding: 1.5rem; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  .card:hover { border-color: var(--border-strong); }
+
+  .card.selected {
+    border-color: var(--accent);
+    border-width: 2px;
+    box-shadow: 0 0 0 3px var(--selected-glow);
+  }
+
+  .card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-bottom: 0.6rem;
+  }
+
+  .card-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+    line-height: 1.3;
+  }
+
+  .card-model {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .card-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+  }
+
+  .card-unit { font-size: 0.65rem; color: var(--text-muted); }
+
+  .best-badge {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: var(--text);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    padding: 3px 7px;
+    border-radius: 0 5px 0 5px;
+    letter-spacing: 0.04em;
+  }
+
+  .card-rows {
+    border-top: 1px solid var(--border);
+    padding-top: 0.6rem;
+    margin-top: 0.6rem;
+  }
+
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    padding: 1.5px 0;
+    color: var(--text-muted);
+  }
+
+  .card-row span:last-child {
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+
+  /* Charts section */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .chart-box-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .chart-wrap { position: relative; width: 100%; height: 240px; }
+
+  /* Footer note */
+  .note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    font-family: 'DM Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bilkalkyl</h1>
+  <p>Leasing vs. köp — total ägandekostnad</p>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Förutsättningar</div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">Mil per år</span>
+          <span class="slider-value" id="km-out">1 500 mil</span>
+        </div>
+        <input type="range" min="500" max="3000" step="100" value="1500" id="km">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">Jämförelseperiod</span>
+          <span class="slider-value" id="years-out">3 år</span>
+        </div>
+        <input type="range" min="1" max="7" step="1" value="3" id="years">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">Elpris</span>
+          <span class="slider-value" id="elpris-out">3,0 kr/kWh</span>
+        </div>
+        <input type="range" min="1" max="6" step="0.1" value="3" id="elpris">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">Kapitalkostnad</span>
+          <span class="slider-value" id="kapital-out">5,0 %/år</span>
+        </div>
+        <input type="range" min="0" max="10" step="0.5" value="5" id="kapital">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Antaganden</div>
+      <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.8; font-family:'DM Mono',monospace;">
+        XC40 Recharge: 2,4 kWh/mil<br>
+        EV6 / Polestar 2: 2,2 kWh/mil<br>
+        Tesla M3 / EV6 ny: 2,1 kWh/mil<br>
+        Bensin äldre: 0,92 l/mil<br>
+        Bensin nyare: 0,82 l/mil<br>
+        Bensinpris: 18,50 kr/l<br><br>
+        Äldre bensinbil (&gt;8 000 mil):<br>
+        trafikförsäkring 250 kr/mån<br><br>
+        Nyare bensinbil (&lt;8 000 mil):<br>
+        helförsäkring 750 kr/mån<br><br>
+        Kapitalkostnad på fullt<br>
+        inköpspris (alternativkostnad<br>
+        eller ränta på billån)
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="section-label" style="margin-bottom:0.75rem;">Välj ett alternativ — klicka för att se uppdelning</div>
+    <div class="cards" id="cards-container"></div>
+
+    <div class="charts-grid">
+      <div class="chart-box">
+        <div class="chart-box-title" id="breakdown-title">Månadskostnad uppdelad</div>
+        <div class="chart-wrap"><canvas id="breakdownChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-box-title" id="total-title">Total kostnad — jämförelse alla alternativ</div>
+        <div class="chart-wrap"><canvas id="totalChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="note" id="foot-note"></div>
+  </main>
+</div>
+
+<script>
+const COLORS = {
+  leasing:'#888780', begagnadEl:'#2B6CB0', nyareEl:'#276749', bensinGammal:'#B7791F', bensinNyare:'#C05621'
+};
+const KEYS   = ['leasing','begagnadEl','nyareEl','bensinGammal','bensinNyare'];
+const NAMES  = ['Leasing','Begagnad elbil','Nyare begagnad elbil','Billig bensinbil','Nyare bensinbil'];
+const MODELS = [
+  'Volvo XC40, inkl. försäkring + el',
+  'Kia EV6 / Polestar 2 (~2022)',
+  'Tesla Model 3 LR / EV6 (~2023)',
+  'Skoda Octavia / V60 (~2013–15)',
+  'Skoda Octavia / V60 (~2018–20)'
+];
+const INKOP       = [0,270000,370000,85000,175000];
+const KWH_MIL     = {leasing:2.4,begagnadEl:2.2,nyareEl:2.1,bensinGammal:0,bensinNyare:0};
+const LITER_MIL   = {leasing:0,begagnadEl:0,nyareEl:0,bensinGammal:0.92,bensinNyare:0.82};
+const DEPR_RATE   = {leasing:0,begagnadEl:0.12,nyareEl:0.10,bensinGammal:0.06,bensinNyare:0.08};
+const SVC_MONTH   = {leasing:0,begagnadEl:300,nyareEl:300,bensinGammal:700,bensinNyare:550};
+const ROAD_BES    = {leasing:0,begagnadEl:445,nyareEl:445,bensinGammal:350,bensinNyare:350};
+const MONTHLY_FEE = {leasing:5890,begagnadEl:0,nyareEl:0,bensinGammal:0,bensinNyare:0};
+const BENSIN_PRIS = 18.5;
+
+function getInsurance(k) {
+  if(k==='leasing')return 0;if(k==='begagnadEl')return 1050;
+  if(k==='nyareEl')return 1200;if(k==='bensinGammal')return 250;
+  if(k==='bensinNyare')return 750;return 0;
+}
+
+function calcOne(k,mil,yrs,elpris,kap){
+  const i=KEYS.indexOf(k),inköp=INKOP[i];
+  const depr=(inköp*DEPR_RATE[k])/12;
+  const kapital=(inköp*(kap/100))/12;
+  const fuel=(mil/12)*(KWH_MIL[k]*elpris+LITER_MIL[k]*BENSIN_PRIS);
+  const ins=getInsurance(k);
+  const svc=SVC_MONTH[k]+ROAD_BES[k]/12;
+  const mon=MONTHLY_FEE[k];
+  const total=mon+depr+kapital+ins+fuel+svc;
+  return{
+    total:Math.round(total),leasing:Math.round(mon),depr:Math.round(depr),
+    kapital:Math.round(kapital),insurance:Math.round(ins),fuel:Math.round(fuel),
+    service:Math.round(svc),inköp,totalYears:Math.round(total*12*yrs)
+  };
+}
+
+let selectedKey='leasing';
+let breakChart=null,totChart=null;
+function fmt(n){return n.toLocaleString('sv-SE');}
+
+function render(){
+  const mil=parseInt(document.getElementById('km').value);
+  const yrs=parseInt(document.getElementById('years').value);
+  const elpris=parseFloat(document.getElementById('elpris').value);
+  const kap=parseFloat(document.getElementById('kapital').value);
+
+  document.getElementById('km-out').textContent=mil.toLocaleString('sv-SE')+' mil';
+  document.getElementById('years-out').textContent=yrs+' år';
+  document.getElementById('elpris-out').textContent=elpris.toFixed(1).replace('.',',')+' kr/kWh';
+  document.getElementById('kapital-out').textContent=kap.toFixed(1).replace('.',',')+' %/år';
+
+  const allData={};
+  KEYS.forEach(k=>{allData[k]=calcOne(k,mil,yrs,elpris,kap);});
+  const minTotal=Math.min(...KEYS.map(k=>allData[k].total));
+
+  const container=document.getElementById('cards-container');
+  container.innerHTML='';
+  KEYS.forEach((k,i)=>{
+    const d=allData[k];
+    const isBest=d.total===minTotal;
+    const isSel=k===selectedKey;
+    const div=document.createElement('div');
+    div.className='card'+(isSel?' selected':'');
+    div.innerHTML=`
+      ${isBest?'<span class="best-badge">lägst</span>':''}
+      <div class="card-dot" style="background:${COLORS[k]}"></div>
+      <div class="card-name">${NAMES[i]}</div>
+      <div class="card-model">${MODELS[i]}</div>
+      <div class="card-total">${fmt(d.total)}</div>
+      <div class="card-unit">kr / månad</div>
+      <div class="card-rows">
+        ${d.inköp>0?`<div class="card-row"><span>Inköpspris</span><span>${fmt(d.inköp)} kr</span></div>`:''}
+        ${d.leasing>0?`<div class="card-row"><span>Leasingavgift</span><span>${fmt(d.leasing)} kr</span></div>`:''}
+        ${d.depr>0?`<div class="card-row"><span>Värdeminskning</span><span>${fmt(d.depr)} kr</span></div>`:''}
+        ${d.kapital>0?`<div class="card-row"><span>Kapitalkostnad</span><span>${fmt(d.kapital)} kr</span></div>`:''}
+        ${d.insurance>0?`<div class="card-row"><span>Försäkring</span><span>${fmt(d.insurance)} kr</span></div>`:''}
+        <div class="card-row"><span>Drivmedel</span><span>${fmt(d.fuel)} kr</span></div>
+        <div class="card-row"><span>Service + skatt</span><span>${fmt(d.service)} kr</span></div>
+      </div>
+    `;
+    div.addEventListener('click',()=>{selectedKey=k;render();});
+    container.appendChild(div);
+  });
+
+  const d=allData[selectedKey];
+  const color=COLORS[selectedKey];
+  const idx=KEYS.indexOf(selectedKey);
+  document.getElementById('breakdown-title').textContent='Månadskostnad — '+NAMES[idx];
+  document.getElementById('total-title').textContent='Total kostnad över '+yrs+' år';
+
+  const breakLabels=[],breakData=[];
+  if(d.leasing>0){breakLabels.push('Leasingavgift');breakData.push(d.leasing);}
+  if(d.depr>0){breakLabels.push('Värdeminskning');breakData.push(d.depr);}
+  if(d.kapital>0){breakLabels.push('Kapitalkostnad');breakData.push(d.kapital);}
+  if(d.insurance>0){breakLabels.push('Försäkring');breakData.push(d.insurance);}
+  breakLabels.push('Drivmedel');breakData.push(d.fuel);
+  breakLabels.push('Service + skatt');breakData.push(d.service);
+
+  if(breakChart)breakChart.destroy();
+  breakChart=new Chart(document.getElementById('breakdownChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:breakLabels,datasets:[{data:breakData,backgroundColor:color,borderRadius:3,borderSkipped:false}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'},callback:v=>fmt(v)+' kr'},grid:{color:'rgba(0,0,0,0.06)'},border:{display:false}},
+        y:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'}},grid:{display:false},border:{display:false}}
+      }
+    }
+  });
+
+  const totalColors=KEYS.map(k=>k===selectedKey?COLORS[k]:COLORS[k]+'55');
+  if(totChart)totChart.destroy();
+  totChart=new Chart(document.getElementById('totalChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:NAMES,datasets:[{data:KEYS.map(k=>allData[k].totalYears),backgroundColor:totalColors,borderRadius:3,borderSkipped:false}]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#7A746C',font:{size:11,family:'DM Mono'},callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'rgba(0,0,0,0.06)'},border:{display:false}},
+        y:{ticks:{color:'#7A746C',font:{size:10,family:'DM Mono'}},grid:{display:false},border:{display:false}}
+      }
+    }
+  });
+
+  document.getElementById('foot-note').textContent=
+    'Kapitalkostnad och värdeminskning är separata poster — depr. är vad bilen tappar i marknadsvärde, kapital är alternativkostnaden för bundet kapital. '+
+    'Äldre bensinbil (>8 000 mil): trafikförsäkring 250 kr/mån. Nyare bensinbil (<8 000 mil): helförsäkring 750 kr/mån. '+
+    'Bensinpris 18,50 kr/l. Klicka på ett kort för att se kostnaderna uppdelade för det alternativet.';
+}
+
+['km','years','elpris','kapital'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',render);
+});
+render();
+</script>
+</body>
+</html>
