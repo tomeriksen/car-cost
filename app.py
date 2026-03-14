@@ -58,19 +58,21 @@ def analyze_car():
     if not content:
         return jsonify({"error": "Inget innehåll angivet."}), 400
 
+    from datetime import date
+    current_year = date.today().year
     miltal_str = f"\n\nMiltal (angivet av användaren): {miltal} mil" if miltal else ""
 
     try:
         if mode == "regnummer":
             regnr = re.sub(r"[\s\-]", "", content).upper()
             vehicle_text = fetch_vehicle_info(regnr)
-            prompt = f"Registreringsnummer: {regnr}\n\nFordonsinformation:\n{vehicle_text}{miltal_str}"
+            prompt = f"Aktuellt år: {current_year}\n\nRegistreringsnummer: {regnr}\n\nFordonsinformation:\n{vehicle_text}{miltal_str}"
         else:
             if content.startswith(("http://", "https://")):
                 listing_text = fetch_blocket(content)
             else:
                 listing_text = content
-            prompt = f"Blocket-annons:\n{listing_text}{miltal_str}"
+            prompt = f"Aktuellt år: {current_year}\n\nBlocket-annons:\n{listing_text}{miltal_str}"
 
         provider = get_provider()
         result = provider.analyze_car(prompt)
@@ -129,4 +131,8 @@ def fetch_vehicle_info(regnr: str) -> str:
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5001)),
+        debug=True
+    )
