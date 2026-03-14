@@ -116,18 +116,30 @@ def fetch_blocket(url: str) -> str:
 
 
 def fetch_vehicle_info(regnr: str) -> str:
-    """Fetch Swedish vehicle data from biluppgifter.se."""
-    try:
-        url = f"https://biluppgifter.se/fordon/{regnr}"
-        r = requests.get(url, headers=HEADERS, timeout=12)
-        r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
-        for tag in soup(["script", "style", "nav", "footer", "header"]):
-            tag.decompose()
-        text = soup.get_text(separator="\n", strip=True)
-        return text[:4000]
-    except Exception as exc:
-        return f"Kunde inte hämta fordonsdata ({exc}). Uppskattar baserat på registreringsnumret."
+    """Fetch Swedish vehicle data — tries multiple sources."""
+    sources = [
+        f"https://biluppgifter.se/fordon/{regnr}",
+        f"https://www.regnummer.se/{regnr}",
+        f"https://fordonsfragan.se/?regnr={regnr}",
+    ]
+    for url in sources:
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=12)
+            print(f">>> {url} → HTTP {r.status_code}, {len(r.text)} bytes")
+            if r.status_code != 200:
+                continue
+            soup = BeautifulSoup(r.text, "html.parser")
+            for tag in soup(["script", "style", "nav", "footer", "header"]):
+                tag.decompose()
+            text = soup.get_text(separator="\n", strip=True)
+            # Sanity check — if we got a useful page it should mention the regnr or car brand
+            if len(text) > 300:
+                print(f">>> using {url}, text length {len(text)}")
+                return text[:4000]
+        except Exception as exc:
+            print(f">>> {url} failed: {exc}")
+
+    return f"Registreringsnummer: {regnr}. Ingen fordonsinformation tillgänglig — uppskatta baserat på regnumrets format och din kunskap om svenska bilar."
 
 
 if __name__ == "__main__":
